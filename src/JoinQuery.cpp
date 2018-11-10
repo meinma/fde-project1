@@ -2,14 +2,109 @@
 #include <assert.h>
 #include <fstream>
 #include <thread>
+#include <vector>
+#include <sstream>
+
+
 //---------------------------------------------------------------------------
-JoinQuery::JoinQuery(std::string lineitem, std::string order,
-                     std::string customer)
+JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
+                     std::string new_customer):lineitem(std::move(new_lineitem)),orders(std::move(new_orders)),customer(std::move(new_customer))
 {}
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam)
 {
-   return 1;
+    // Erst customer einlesen und mit segmentParam vergleichen
+    // 1st try save customkeys of customers with segmentParam as segment
+    const std::vector<int>customerKeys = getCustomerIds(segmentParam);
+    const std::vector<int>orderKeys = getOrderIds(customerKeys);
+    const std::vector<int>quantities = getLineitemQuantities(orderKeys);
+    int sum = 0;
+    for (std::vector<int>::const_iterator it = quantities.begin(); it != quantities.end(); it++){
+       sum += *it;
+    }
+    return sum / quantities.size();
+}
+
+//--------------------------------------------------------------------------
+std::vector<int>JoinQuery::getLineitemQuantities(const std::vector<int>orderKeys){
+    std::ifstream stream;
+    assert(stream);
+    std::string line;
+    std::vector<int>quantities;
+    stream.open(this->lineitem,std::ios::in);
+    if (stream.is_open()){
+        std::string orderId;
+        std::string quantity;
+        while (std::getline(stream,line)){
+            std::stringstream linestream(line);
+            std::getline(linestream,orderId,'|');
+            for (std::vector<int>::const_iterator it = orderKeys.begin(); it != orderKeys.end(); ++it){
+                if (std::stoi(orderId) == *it){
+                    for (int i = 0; i < 4; i++)
+                        std::getline(linestream,quantity,'|');
+                    quantities.push_back(std::stoi(quantity));
+                    break;
+                }
+            }
+        }
+    }
+
+}
+
+
+
+
+//---------------------------------------------------------------------------
+
+std::vector<int> JoinQuery::getOrderIds(const std::vector<int> customerKeys){
+    std::ifstream  stream;
+    assert(stream);
+    std::string line;
+    std::vector<int>orderkeys;
+    stream.open(this->orders,std::ios::in);
+    if (stream.is_open()){
+        std::string orderId;
+        std::string customerId;
+        while (std::getline(stream,line)){
+            std::stringstream linestream(line);
+            std::getline(linestream,orderId,'|');
+            std::getline(linestream,customerId,'|');
+            for (std::vector<int>::const_iterator it = customerKeys.begin(); it != customerKeys.end(); ++it){
+                if (std::stoi(customerId) == *it) {
+                    orderkeys.push_back(std::stoi(orderId));
+                    break;
+                }
+            }
+        }
+        return orderkeys;
+    }
+    stream.close();
+
+}
+
+//---------------------------------------------------------------------------
+std::vector<int> JoinQuery::getCustomerIds(const std::string segmentParam){
+    std::ifstream stream;
+    assert(stream);
+    std::string line;
+    std::vector<int>customerkeys;
+    stream.open(this->customer,std::ios::in);
+    if (stream.is_open()){
+        std::string id;
+        std::string segment;
+        while(std::getline(stream,line)){
+            std::stringstream linestream (line);
+            std::getline(linestream,id,'|'); //save id
+            for (int i  = 0; i < 5; i++)
+                std::getline(linestream,segment,'|'); //Skip the next five elements
+            std::getline(linestream,segment,'|'); //save the segment
+            if (segment == segmentParam){
+                customerkeys.push_back(std::stoi(id));
+            }
+        }
+    }
+    stream.close();
+    return customerkeys;
 }
 //---------------------------------------------------------------------------
 size_t JoinQuery::lineCount(std::string rel)

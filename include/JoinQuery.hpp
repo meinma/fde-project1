@@ -1,9 +1,15 @@
 #include <string>
+#include <vector>
 
 //---------------------------------------------------------------------------
 class JoinQuery
 /// Class which provides answers to queries on lineitem orders and customer
 {
+   private:
+    std::string lineitem;
+    std::string orders;
+    std::string customer;
+
    public:
   /**************************************************************************
    *  The constructor receives paths to data from the TPC-H benchmark.
@@ -42,6 +48,24 @@ class JoinQuery
     *     avg(l_quantity) * 100 is the same with the point dropped.
     ************************************************************************/
    size_t avg(std::string segmentParam);
+   /**
+    *
+    * @param segmentParam
+    * @return all ids of customer which have the same segment as segmentParam
+    */
+   std::vector<int>getCustomerIds(std::string segmentParam);
+   /**
+    *
+    * get all orderkeys where the custkey is in customerIds
+    *
+    */
+    std::vector<int> getOrderIds(std::vector<int>customerIds);
+    /**
+     *
+     * @param orderIds
+     * @return all quantities of table lineitem belonging to the orders from the parameter orderIds
+     */
+    std::vector<int>getLineitemQuantities(std::vector<int>orderIds);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 };
