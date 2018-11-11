@@ -65,7 +65,7 @@ class JoinQuery
      * @param orderIds
      * @return all quantities of table lineitem belonging to the orders from the parameter orderIds
      */
-    std::vector<int>getLineitemQuantities(std::vector<int>orderIds);
+    std::vector<double>getLineitemQuantities(std::vector<int>orderIds);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 };

@@ -17,20 +17,20 @@ size_t JoinQuery::avg(std::string segmentParam)
     // 1st try save customkeys of customers with segmentParam as segment
     const std::vector<int>customerKeys = getCustomerIds(segmentParam);
     const std::vector<int>orderKeys = getOrderIds(customerKeys);
-    const std::vector<int>quantities = getLineitemQuantities(orderKeys);
-    int sum = 0;
-    for (std::vector<int>::const_iterator it = quantities.begin(); it != quantities.end(); it++){
+    const std::vector<double>quantities = getLineitemQuantities(orderKeys);
+    double sum = 0;
+    for (std::vector<double>::const_iterator it = quantities.begin(); it != quantities.end(); it++){
        sum += *it;
     }
-    return sum / quantities.size();
+    return (sum * 100) / quantities.size();
 }
 
 //--------------------------------------------------------------------------
-std::vector<int>JoinQuery::getLineitemQuantities(const std::vector<int>orderKeys){
+std::vector<double>JoinQuery::getLineitemQuantities(const std::vector<int>orderKeys){
     std::ifstream stream;
     assert(stream);
     std::string line;
-    std::vector<int>quantities;
+    std::vector<double>quantities;
     stream.open(this->lineitem,std::ios::in);
     if (stream.is_open()){
         std::string orderId;
@@ -42,7 +42,7 @@ std::vector<int>JoinQuery::getLineitemQuantities(const std::vector<int>orderKeys
                 if (std::stoi(orderId) == *it){
                     for (int i = 0; i < 4; i++)
                         std::getline(linestream,quantity,'|');
-                    quantities.push_back(std::stoi(quantity));
+                    quantities.push_back(std::stod(quantity));
                     break;
                 }
             }
