@@ -15,22 +15,23 @@ size_t JoinQuery::avg(std::string segmentParam)
 {
     // Erst customer einlesen und mit segmentParam vergleichen
     // 1st try save customkeys of customers with segmentParam as segment
-    const std::vector<int>customerKeys = getCustomerIds(segmentParam);
+    const std::vector<int>customerKeys = getCustomerIds(std::move(segmentParam));
     const std::vector<int>orderKeys = getOrderIds(customerKeys);
-    const std::vector<double>quantities = getLineitemQuantities(orderKeys);
+    const std::vector<float>quantities = getLineitemQuantities(orderKeys);
+    int size = quantities.size();
     double sum = 0;
-    for (std::vector<double>::const_iterator it = quantities.begin(); it != quantities.end(); it++){
+    for (std::vector<float>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
        sum += *it;
     }
     return (sum * 100) / quantities.size();
 }
 
 //--------------------------------------------------------------------------
-std::vector<double>JoinQuery::getLineitemQuantities(const std::vector<int>orderKeys){
+std::vector<float>JoinQuery::getLineitemQuantities(const std::vector<int>orderKeys){
     std::ifstream stream;
     assert(stream);
     std::string line;
-    std::vector<double>quantities;
+    std::vector<float>quantities;
     stream.open(this->lineitem,std::ios::in);
     if (stream.is_open()){
         std::string orderId;
@@ -38,18 +39,22 @@ std::vector<double>JoinQuery::getLineitemQuantities(const std::vector<int>orderK
         while (std::getline(stream,line)){
             std::stringstream linestream(line);
             std::getline(linestream,orderId,'|');
+            // Ab hier Korrekturen
+            for (int i = 0; i < 3; i++)
+                std::getline(linestream,quantity,'|');
             for (std::vector<int>::const_iterator it = orderKeys.begin(); it != orderKeys.end(); ++it){
                 if (std::stoi(orderId) == *it){
-                    for (int i = 0; i < 4; i++)
-                        std::getline(linestream,quantity,'|');
-                    quantities.push_back(std::stod(quantity));
+                    quantities.push_back(std::stof(quantity));
                     break;
                 }
             }
         }
+        return quantities;
     }
 
 }
+
+//contains Beziehung statt for-Schleife
 
 
 
@@ -95,7 +100,7 @@ std::vector<int> JoinQuery::getCustomerIds(const std::string segmentParam){
         while(std::getline(stream,line)){
             std::stringstream linestream (line);
             std::getline(linestream,id,'|'); //save id
-            for (int i  = 0; i < 5; i++)
+            for (int i  = 0; i < 5; ++i)
                 std::getline(linestream,segment,'|'); //Skip the next five elements
             std::getline(linestream,segment,'|'); //save the segment
             if (segment == segmentParam){
