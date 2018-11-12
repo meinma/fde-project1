@@ -19,11 +19,11 @@ size_t JoinQuery::avg(std::string segmentParam)
     const std::vector<int>orderKeys = getOrderIds(customerKeys);
     const std::vector<float>quantities = getLineitemQuantities(orderKeys);
     int size = quantities.size();
-    double sum = 0;
+    float sum = 0;
     for (std::vector<float>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
        sum += *it;
     }
-    return (sum * 100) / quantities.size();
+    return (sum / quantities.size()) * 100;
 }
 
 //--------------------------------------------------------------------------
@@ -40,7 +40,7 @@ std::vector<float>JoinQuery::getLineitemQuantities(const std::vector<int>orderKe
             std::stringstream linestream(line);
             std::getline(linestream,orderId,'|');
             // Ab hier Korrekturen
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
                 std::getline(linestream,quantity,'|');
             for (std::vector<int>::const_iterator it = orderKeys.begin(); it != orderKeys.end(); ++it){
                 if (std::stoi(orderId) == *it){
