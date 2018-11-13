@@ -44,7 +44,7 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
             }
         }
     }
-    return sum;
+    return sum/counter;
 }
 
 //---------------------------------------------------------------------------
