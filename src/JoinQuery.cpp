@@ -21,22 +21,22 @@ size_t JoinQuery::avg(std::string segmentParam)
     const std::unordered_set<int>orderKeys = getOrderIds(customerKeys);
     int orderSize = orderKeys.size();
     //Until here it's right
-    const std::multiset<float>quantities = getLineitemQuantities(orderKeys);
-    int quantitySize = quantities.size();
+    const std::multiset<double>quantities = getLineitemQuantities(orderKeys);
+    u_int64_t quantitySize = quantities.size();
     u_int64_t sum = 0;
-    for (std::multiset<float>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
+    for (std::multiset<double>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
         sum += *it*100;
     }
-    return sum / quantities.size();
+    return sum / quantitySize;
 }
 
 //--------------------------------------------------------------------------
-std::multiset<float>JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
+std::multiset<double>JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
     std::ifstream stream;
     int counter = 0;
     assert(stream);
     std::string line;
-    std::multiset<float>quantities;
+    std::multiset<double >quantities;
     stream.open(this->lineitem,std::ios::in);
     if (stream.is_open()){
         std::string orderId;
@@ -49,7 +49,7 @@ std::multiset<float>JoinQuery::getLineitemQuantities(const std::unordered_set<in
                 counter++;
                 for (int i = 0; i < 4; i++)
                     std::getline(linestream, quantity,'|');
-                quantities.insert(std::stof(quantity));
+                quantities.insert(std::stod(quantity));
             }
         }
     }
