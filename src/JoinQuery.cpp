@@ -12,31 +12,22 @@ JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam)
 {
-    //customers : 28,
-    // orders: 268
-    // lineitem_quantities: 50
-    //Try of using unordered set instead of vectors
     const std::unordered_set<int>customerKeys = getCustomerIds(std::move(segmentParam));
-    int customerSize = customerKeys.size();
     const std::unordered_set<int>orderKeys = getOrderIds(customerKeys);
-    int orderSize = orderKeys.size();
-    //Until here it's right
-    const std::multiset<double>quantities = getLineitemQuantities(orderKeys);
-    u_int64_t quantitySize = quantities.size();
-    u_int64_t sum = 0;
-    for (std::multiset<double>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
-        sum += *it*100;
-    }
-    return sum / quantitySize;
+    const uint64_t quantity = getLineitemQuantities(orderKeys);
+    return quantity;
 }
 
+
+//Optimieren durch Weglassen des letzten Multisets und nur der Rückgabe der Summe und der Anzahl an Zeilen.
+// Dadurch Einsparen einer for-Schleife
 //--------------------------------------------------------------------------
-std::multiset<double>JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
+u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
     std::ifstream stream;
-    int counter = 0;
+    u_int64_t counter = 0;
+    u_int64_t sum = 0;
     assert(stream);
     std::string line;
-    std::multiset<double >quantities;
     stream.open(this->lineitem,std::ios::in);
     if (stream.is_open()){
         std::string orderId;
@@ -49,11 +40,11 @@ std::multiset<double>JoinQuery::getLineitemQuantities(const std::unordered_set<i
                 counter++;
                 for (int i = 0; i < 4; i++)
                     std::getline(linestream, quantity,'|');
-                quantities.insert(std::stod(quantity));
+                sum += std::stod(quantity) *100;
             }
         }
     }
-    return quantities;
+    return sum;
 }
 
 //---------------------------------------------------------------------------
