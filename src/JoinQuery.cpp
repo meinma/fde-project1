@@ -40,11 +40,11 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
                 counter++;
                 for (int i = 0; i < 4; i++)
                     std::getline(linestream, quantity,'|');
-                sum += std::stod(quantity) *100;
+                sum += std::stod(quantity);
             }
         }
     }
-    return sum/counter;
+    return (sum *100) /counter;
 }
 
 //---------------------------------------------------------------------------
