@@ -1,9 +1,8 @@
 #include "JoinQuery.hpp"
 #include <assert.h>
 #include <fstream>
-#include <thread>
-#include <vector>
 #include <sstream>
+#include <iostream>
 
 
 //---------------------------------------------------------------------------
@@ -13,59 +12,57 @@ JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam)
 {
-    // Erst customer einlesen und mit segmentParam vergleichen
-    // 1st try save customkeys of customers with segmentParam as segment
-    const std::vector<int>customerKeys = getCustomerIds(std::move(segmentParam));
-    const std::vector<int>orderKeys = getOrderIds(customerKeys);
-    const std::vector<float>quantities = getLineitemQuantities(orderKeys);
-    int size = quantities.size();
-    float sum = 0;
-    for (std::vector<float>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
-       sum += *it;
+    //customers : 28,
+    // orders: 268
+    // lineitem_quantities: 50
+    //Try of using unordered set instead of vectors
+    const std::unordered_set<int>customerKeys = getCustomerIds(std::move(segmentParam));
+    int customerSize = customerKeys.size();
+    const std::unordered_set<int>orderKeys = getOrderIds(customerKeys);
+    int orderSize = orderKeys.size();
+    //Until here it's right
+    const std::multiset<float>quantities = getLineitemQuantities(orderKeys);
+    int quantitySize = quantities.size();
+    int64_t sum = 0;
+    for (std::multiset<float>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
+        sum += *it;
     }
-    return (sum / quantities.size()) * 100;
+    return sum *100 / quantities.size();
 }
 
 //--------------------------------------------------------------------------
-std::vector<float>JoinQuery::getLineitemQuantities(const std::vector<int>orderKeys){
+std::multiset<float>JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
     std::ifstream stream;
+    int counter = 0;
     assert(stream);
     std::string line;
-    std::vector<float>quantities;
+    std::multiset<float>quantities;
     stream.open(this->lineitem,std::ios::in);
     if (stream.is_open()){
         std::string orderId;
         std::string quantity;
-        while (std::getline(stream,line)){
+        while (std::getline(stream,line)) {
             std::stringstream linestream(line);
-            std::getline(linestream,orderId,'|');
-            // Ab hier Korrekturen
-            for (int i = 0; i < 4; i++)
-                std::getline(linestream,quantity,'|');
-            for (std::vector<int>::const_iterator it = orderKeys.begin(); it != orderKeys.end(); ++it){
-                if (std::stoi(orderId) == *it){
-                    quantities.push_back(std::stof(quantity));
-                    break;
-                }
+            std::getline(linestream, orderId, '|');
+            auto search = orderKeys.find(std::stoi(orderId));
+            if (search != orderKeys.end()) {
+                counter++;
+                for (int i = 0; i < 4; i++)
+                    std::getline(linestream, quantity,'|');
+                quantities.insert(std::stof(quantity));
             }
         }
-        return quantities;
     }
-
+    return quantities;
 }
-
-//contains Beziehung statt for-Schleife
-
-
-
 
 //---------------------------------------------------------------------------
 
-std::vector<int> JoinQuery::getOrderIds(const std::vector<int> customerKeys){
+std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> customerKeys){
     std::ifstream  stream;
     assert(stream);
     std::string line;
-    std::vector<int>orderkeys;
+    std::unordered_set<int>orderKeys;
     stream.open(this->orders,std::ios::in);
     if (stream.is_open()){
         std::string orderId;
@@ -74,25 +71,22 @@ std::vector<int> JoinQuery::getOrderIds(const std::vector<int> customerKeys){
             std::stringstream linestream(line);
             std::getline(linestream,orderId,'|');
             std::getline(linestream,customerId,'|');
-            for (std::vector<int>::const_iterator it = customerKeys.begin(); it != customerKeys.end(); ++it){
-                if (std::stoi(customerId) == *it) {
-                    orderkeys.push_back(std::stoi(orderId));
-                    break;
-                }
-            }
+            auto search = customerKeys.find(std::stoi(customerId));
+            if (search != customerKeys.end())
+                orderKeys.insert(std::stoi(orderId));
         }
-        return orderkeys;
     }
     stream.close();
-
+    return orderKeys;
 }
 
 //---------------------------------------------------------------------------
-std::vector<int> JoinQuery::getCustomerIds(const std::string segmentParam){
+//This is working
+std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam){
     std::ifstream stream;
     assert(stream);
     std::string line;
-    std::vector<int>customerkeys;
+    std::unordered_set<int>customerKeys;
     stream.open(this->customer,std::ios::in);
     if (stream.is_open()){
         std::string id;
@@ -104,20 +98,20 @@ std::vector<int> JoinQuery::getCustomerIds(const std::string segmentParam){
                 std::getline(linestream,segment,'|'); //Skip the next five elements
             std::getline(linestream,segment,'|'); //save the segment
             if (segment == segmentParam){
-                customerkeys.push_back(std::stoi(id));
+                customerKeys.insert(std::stoi(id));
             }
         }
     }
     stream.close();
-    return customerkeys;
+    return customerKeys;
 }
 //---------------------------------------------------------------------------
 size_t JoinQuery::lineCount(std::string rel)
 {
-   std::ifstream relation(rel);
-   assert(relation);  // make sure the provided string references a file
-   size_t n = 0;
-   for (std::string line; std::getline(relation, line);) n++;
-   return n;
+    std::ifstream relation(rel);
+    assert(relation);  // make sure the provided string references a file
+    size_t n = 0;
+    for (std::string line; std::getline(relation, line);) n++;
+    return n;
 }
 //---------------------------------------------------------------------------

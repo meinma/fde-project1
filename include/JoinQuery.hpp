@@ -1,5 +1,7 @@
 #include <string>
 #include <vector>
+#include <unordered_set>
+#include <set>
 
 //---------------------------------------------------------------------------
 class JoinQuery
@@ -53,19 +55,19 @@ class JoinQuery
     * @param segmentParam
     * @return all ids of customer which have the same segment as segmentParam
     */
-   std::vector<int>getCustomerIds(std::string segmentParam);
+   std::unordered_set<int>getCustomerIds(std::string segmentParam);
    /**
     *
     * get all orderkeys where the custkey is in customerIds
     *
     */
-    std::vector<int> getOrderIds(std::vector<int>customerIds);
+    std::unordered_set<int> getOrderIds(std::unordered_set<int>customerIds);
     /**
      *
      * @param orderIds
      * @return all quantities of table lineitem belonging to the orders from the parameter orderIds
      */
-    std::vector<float>getLineitemQuantities(std::vector<int>orderIds);
+    std::multiset<float>getLineitemQuantities(std::unordered_set<int>orderIds);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 };
