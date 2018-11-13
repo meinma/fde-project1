@@ -25,9 +25,9 @@ size_t JoinQuery::avg(std::string segmentParam)
     int quantitySize = quantities.size();
     u_int64_t sum = 0;
     for (std::multiset<float>::const_iterator it = quantities.begin(); it != quantities.end(); ++it){
-        sum += *it;
+        sum += *it*100;
     }
-    return (sum *100) / quantities.size();
+    return sum / quantities.size();
 }
 
 //--------------------------------------------------------------------------
