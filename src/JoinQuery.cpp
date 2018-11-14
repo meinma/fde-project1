@@ -5,7 +5,7 @@
 #include <iostream>
 #include <future>
 #include <algorithm>
-
+#include <thread>
 
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
