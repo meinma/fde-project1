@@ -55,13 +55,13 @@ class JoinQuery
     * @param segmentParam
     * @return all ids of customer which have the same segment as segmentParam
     */
-   std::unordered_set<int>getCustomerIds(std::string segmentParam);
+    std::unordered_set<int> getCustomerIds(u_int64_t start, u_int64_t end, std::string segmentParam);
    /**
     *
     * get all orderkeys where the custkey is in customerIds
     *
     */
-    std::unordered_set<int> getOrderIds(std::unordered_set<int>customerIds);
+    std::unordered_set<int> getOrderIds(u_int64_t start, u_int64_t end, std::unordered_set<int>customerIds);
     /**
      *
      * @param orderIds

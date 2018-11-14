@@ -3,6 +3,8 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <future>
+#include <algorithm>
 
 
 //---------------------------------------------------------------------------
@@ -12,10 +14,55 @@ JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam)
 {
-    const std::unordered_set<int>customerKeys = getCustomerIds(std::move(segmentParam));
-    const std::unordered_set<int>orderKeys = getOrderIds(customerKeys);
-    const uint64_t quantity = getLineitemQuantities(orderKeys);
+    u_int64_t customerLength = lineCount(this->customer);
+    u_int64_t orderLength = lineCount(this->orders);
+    //u_int64_t lineitemLength = lineCount(this->lineitem);
+
+    // Threads für CustomerTable
+
+    auto f1 = std::async(&JoinQuery::getCustomerIds,this,0,customerLength,segmentParam);
+    auto f11 = std::async(&JoinQuery::getCustomerIds,this,customerLength/2,customerLength,segmentParam);
+    const std::unordered_set<int> customers1 = f1.get();
+    const std::unordered_set<int> customers2 = f11.get();
+    std::unordered_set<int>finalCustomers;
+    std::merge(customers1.begin(),customers1.end(),customers2.begin(),customers2.end(),std::inserter(finalCustomers,finalCustomers.begin()));
+
+    auto f2 = std::async(&JoinQuery::getOrderIds,this,0,orderLength/2,finalCustomers);
+    auto f21  = std::async(&JoinQuery::getOrderIds,this,orderLength/2,orderLength,finalCustomers);
+    const std::unordered_set<int>orders1 = f2.get();
+    const std::unordered_set<int>orders2 = f21.get();
+    std::unordered_set<int>finalOrders;
+    std::merge(orders1.begin(),orders1.end(),orders2.begin(),orders2.end(),std::inserter(finalOrders,finalOrders.begin()));
+    auto f3 = std::async(&JoinQuery::getLineitemQuantities,this,finalOrders);
+    const u_int64_t quantity = f3.get();
     return quantity;
+
+    /*
+    auto f1 = std::async(&JoinQuery::getCustomerIds,this,0,customerLength/2,segmentParam);
+    auto customerkeys1 = f1.get();
+    auto f2 = std::async(&JoinQuery::getCustomerIds,this,customerLength/2,customerLength,segmentParam);
+    auto customerkeys2 = f2.get();
+    //Threads für OrderTable
+    auto f3 = std::async(&JoinQuery::getOrderIds,this,0,orderLength/2,customerkeys1);
+    auto f4 = std::async(&JoinQuery::getOrderIds,this,orderLength/2,orderLength,customerkeys1);
+    auto f5 = std::async(&JoinQuery::getOrderIds,this,0,orderLength/2,customerkeys2);
+    auto f6 = std::async(&JoinQuery::getOrderIds,this,orderLength/2,orderLength,customerkeys2);
+
+    //Threads für LineitemQuantities
+    auto f7 = std::async(&JoinQuery::getLineitemQuantities,this,f3.get());
+    auto f8 = std::async(&JoinQuery::getLineitemQuantities,this,f4.get());
+    auto f9 = std::async(&JoinQuery::getLineitemQuantities,this,f5.get());
+    auto f10 = std::async(&JoinQuery::getLineitemQuantities,this,f6.get());
+
+    return (f7.get() + f8.get() + f9.get() +f10.get()) / 4;
+     */
+    //auto customerKeys1 = f1.get();
+    //auto customerKeys2 = f2.get();
+    //const std::unordered_set<int>customerKeys = getCustomerIds(0,customerLength,std::move(segmentParam));
+    //const std::unordered_set<int>orderKeys = getOrderIds(0,orderLength,f1.get());
+    //const uint64_t quantity = getLineitemQuantities(orderKeys);
+    //return quantity;
+
 }
 
 
@@ -32,7 +79,7 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
     if (stream.is_open()){
         std::string orderId;
         std::string quantity;
-        while (std::getline(stream,line)) {
+        while (std::getline(stream,line)){
             std::stringstream linestream(line);
             std::getline(linestream, orderId, '|');
             auto search = orderKeys.find(std::stoi(orderId));
@@ -49,7 +96,7 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
 
 //---------------------------------------------------------------------------
 
-std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> customerKeys){
+std::unordered_set<int> JoinQuery::getOrderIds(u_int64_t start,u_int64_t end, const std::unordered_set<int> customerKeys){
     std::ifstream  stream;
     assert(stream);
     std::string line;
@@ -58,7 +105,12 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> cus
     if (stream.is_open()){
         std::string orderId;
         std::string customerId;
-        while (std::getline(stream,line)){
+        if (start != 0){
+            for (u_int64_t jmp = 0; jmp < start; jmp++)
+                std::getline(stream,line);
+        }
+        for (; start < end; start++){
+            std::getline(stream,line);
             std::stringstream linestream(line);
             std::getline(linestream,orderId,'|');
             std::getline(linestream,customerId,'|');
@@ -73,7 +125,7 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> cus
 
 //---------------------------------------------------------------------------
 //This is working
-std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam){
+std::unordered_set<int> JoinQuery::getCustomerIds(u_int64_t start, u_int64_t end, const std::string segmentParam){
     std::ifstream stream;
     assert(stream);
     std::string line;
@@ -82,10 +134,15 @@ std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam
     if (stream.is_open()){
         std::string id;
         std::string segment;
-        while(std::getline(stream,line)){
+        if (start != 0){
+            for(u_int64_t jmp = 0; jmp < start; jmp++)
+                std::getline(stream,line);
+        }
+        for(u_int64_t i = start; i < end; i++){
+            std::getline(stream,line);
             std::stringstream linestream (line);
             std::getline(linestream,id,'|'); //save id
-            for (int i  = 0; i < 5; ++i)
+            for (int j  = 0; j < 5; ++j)
                 std::getline(linestream,segment,'|'); //Skip the next five elements
             std::getline(linestream,segment,'|'); //save the segment
             if (segment == segmentParam){
