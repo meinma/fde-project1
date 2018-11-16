@@ -5,7 +5,6 @@
 #include <iostream>
 #include <future>
 #include <algorithm>
-#include <thread>
 
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
@@ -19,7 +18,7 @@ size_t JoinQuery::avg(std::string segmentParam)
     //u_int64_t lineitemLength = lineCount(this->lineitem);
 
     // Threads für CustomerTable
-
+    /* Funktioniert ist aber langsam
     auto f1 = std::async(&JoinQuery::getCustomerIds,this,0,customerLength,segmentParam);
     auto f11 = std::async(&JoinQuery::getCustomerIds,this,customerLength/2,customerLength,segmentParam);
     const std::unordered_set<int> customers1 = f1.get();
@@ -36,27 +35,35 @@ size_t JoinQuery::avg(std::string segmentParam)
     auto f3 = std::async(&JoinQuery::getLineitemQuantities,this,finalOrders);
     const u_int64_t quantity = f3.get();
     return quantity;
+    */
 
-    /*
-     * 2. schnellerer Versuch mit Threads
+     // 2. schnellerer Versuch mit Threads
     auto f1 = std::async(&JoinQuery::getCustomerIds,this,0,customerLength/2,segmentParam);
     auto customerkeys1 = f1.get();
     auto f2 = std::async(&JoinQuery::getCustomerIds,this,customerLength/2,customerLength,segmentParam);
     auto customerkeys2 = f2.get();
-    //Threads für OrderTable
+    //Threads für OrderTable Ergebnisse sind noch korrekt
     auto f3 = std::async(&JoinQuery::getOrderIds,this,0,orderLength/2,customerkeys1);
     auto f4 = std::async(&JoinQuery::getOrderIds,this,orderLength/2,orderLength,customerkeys1);
     auto f5 = std::async(&JoinQuery::getOrderIds,this,0,orderLength/2,customerkeys2);
     auto f6 = std::async(&JoinQuery::getOrderIds,this,orderLength/2,orderLength,customerkeys2);
 
     //Threads für LineitemQuantities
+
     auto f7 = std::async(&JoinQuery::getLineitemQuantities,this,f3.get());
     auto f8 = std::async(&JoinQuery::getLineitemQuantities,this,f4.get());
     auto f9 = std::async(&JoinQuery::getLineitemQuantities,this,f5.get());
     auto f10 = std::async(&JoinQuery::getLineitemQuantities,this,f6.get());
 
-    return (f7.get() + f8.get() + f9.get() +f10.get()) / 4;
-     */
+    std::vector<u_int64_t> erg1 = f7.get();
+    std::vector<u_int64_t> erg2 = f8.get();
+    std::vector<u_int64_t> erg3 = f9.get();
+    std::vector<u_int64_t> erg4 = f10.get();
+
+    u_int64_t sum = erg1[0] + erg2[0] + erg3[0] + erg4[0];
+    u_int64_t counter = erg1[1] + erg2[1] + erg3[1] + erg4[1];
+    return sum/counter;
+
 
 }
 
@@ -64,8 +71,9 @@ size_t JoinQuery::avg(std::string segmentParam)
 //Optimieren durch Weglassen des letzten Multisets und nur der Rückgabe der Summe und der Anzahl an Zeilen.
 // Dadurch Einsparen einer for-Schleife
 //--------------------------------------------------------------------------
-u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
+std::vector<u_int64_t>JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
     std::ifstream stream;
+    std::vector <u_int64_t>summary;
     u_int64_t counter = 0;
     u_int64_t sum = 0;
     assert(stream);
@@ -86,7 +94,10 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
             }
         }
     }
-    return (sum *100) /counter;
+    summary.push_back(sum*100);
+    summary.push_back(counter);
+    return summary;
+    //return (sum *100) /counter;
 }
 
 //---------------------------------------------------------------------------

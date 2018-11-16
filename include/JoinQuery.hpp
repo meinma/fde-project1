@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_set>
 #include <set>
+#include <unordered_map>
 
 //---------------------------------------------------------------------------
 class JoinQuery
@@ -67,7 +68,7 @@ class JoinQuery
      * @param orderIds
      * @return all quantities of table lineitem belonging to the orders from the parameter orderIds
      */
-    u_int64_t getLineitemQuantities(std::unordered_set<int>orderIds);
+    std::vector<u_int64_t>getLineitemQuantities(std::unordered_set<int>orderIds);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 };
