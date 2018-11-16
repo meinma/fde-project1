@@ -32,3 +32,5 @@ target_link_libraries(bench benchmark join_query pthread)
 ### Performance Measurements for leaderboard
 add_executable(main src/main.cpp)
 target_link_libraries(main join_query)
+
+SET(CMAKe_CXX_FLAGS -pthread)

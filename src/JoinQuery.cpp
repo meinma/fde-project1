@@ -38,6 +38,7 @@ size_t JoinQuery::avg(std::string segmentParam)
     return quantity;
 
     /*
+     * 2. schnellerer Versuch mit Threads
     auto f1 = std::async(&JoinQuery::getCustomerIds,this,0,customerLength/2,segmentParam);
     auto customerkeys1 = f1.get();
     auto f2 = std::async(&JoinQuery::getCustomerIds,this,customerLength/2,customerLength,segmentParam);
@@ -56,12 +57,6 @@ size_t JoinQuery::avg(std::string segmentParam)
 
     return (f7.get() + f8.get() + f9.get() +f10.get()) / 4;
      */
-    //auto customerKeys1 = f1.get();
-    //auto customerKeys2 = f2.get();
-    //const std::unordered_set<int>customerKeys = getCustomerIds(0,customerLength,std::move(segmentParam));
-    //const std::unordered_set<int>orderKeys = getOrderIds(0,orderLength,f1.get());
-    //const uint64_t quantity = getLineitemQuantities(orderKeys);
-    //return quantity;
 
 }
 
