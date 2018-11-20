@@ -4,6 +4,7 @@ set(CMAKE_C_COMPILER gcc)
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS -pthread)
 
 project(bonusTpchJoin C CXX)
 
@@ -32,3 +33,4 @@ target_link_libraries(bench benchmark join_query pthread)
 ### Performance Measurements for leaderboard
 add_executable(main src/main.cpp)
 target_link_libraries(main join_query)
+
