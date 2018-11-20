@@ -12,8 +12,6 @@ class JoinQuery
     std::string lineitem;
     std::string orders;
     std::string customer;
-    std::unordered_set<int>*customerKeys;
-    std::unordered_set<int>*orderKeys;
 
    public:
   /**************************************************************************
@@ -58,19 +56,19 @@ class JoinQuery
     * @param segmentParam
     * @return all ids of customer which have the same segment as segmentParam
     */
-   void getCustomerIds(std::string segmentParam);
+    std::unordered_set<int> getCustomerIds(std::string segmentParam);
    /**
     *
     * get all orderkeys where the custkey is in customerIds
     *
     */
-    void getOrderIds();
+    std::unordered_set<int> getOrderIds(std::unordered_set<int>);
     /**
      *
      * @param orderIds
      * @return all quantities of table lineitem belonging to the orders from the parameter orderIds
      */
-    u_int64_t getLineitemQuantities();
+    u_int64_t getLineitemQuantities(std::unordered_set<int>);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 };

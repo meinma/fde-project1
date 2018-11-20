@@ -8,23 +8,22 @@
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
                      std::string new_customer):lineitem(std::move(new_lineitem)),orders(std::move(new_orders)),customer(std::move(new_customer))
-                             ,orderKeys(new std::unordered_set<int>()),customerKeys(new std::unordered_set<int>())
 {
 
 }
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam)
 {
-    getCustomerIds(std::move(segmentParam));
-    getOrderIds();
-    return getLineitemQuantities();
+    const std::unordered_set<int> customerKeys = getCustomerIds(std::move(segmentParam));
+    const std:: unordered_set<int> orderKeys = getOrderIds(customerKeys);
+    return getLineitemQuantities(orderKeys);
 }
 
 
 //Optimieren durch Weglassen des letzten Multisets und nur der Rückgabe der Summe und der Anzahl an Zeilen.
 // Dadurch Einsparen einer for-Schleife
 //--------------------------------------------------------------------------
-u_int64_t JoinQuery::getLineitemQuantities(){
+u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys){
     std::ifstream stream;
     u_int64_t counter = 0;
     u_int64_t sum = 0;
@@ -36,8 +35,8 @@ u_int64_t JoinQuery::getLineitemQuantities(){
         while (std::getline(stream,line)) {
             std::stringstream linestream(line);
             std::getline(linestream, orderId, '|');
-            auto search = this->orderKeys->find(std::stoi(orderId));
-            if (search != this->orderKeys->end()) {
+            auto search = orderKeys.find(std::stoi(orderId));
+            if (search != orderKeys.end()) {
                 counter++;
                 for (int i = 0; i < 4; i++)
                     std::getline(linestream, quantity,'|');
@@ -50,10 +49,10 @@ u_int64_t JoinQuery::getLineitemQuantities(){
 
 //---------------------------------------------------------------------------
 
-void JoinQuery::getOrderIds(){
+std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int>customerKeys){
     std::ifstream  stream;
     std::string line;
-    //std::unordered_set<int>orderKeys;
+    std::unordered_set<int>orderKeys;
     stream.open(this->orders,std::ios::in);
     if (stream.is_open()){
         std::string orderId;
@@ -62,22 +61,23 @@ void JoinQuery::getOrderIds(){
             std::stringstream linestream(line);
             std::getline(linestream,orderId,'|');
             std::getline(linestream,customerId,'|');
-            auto search = this->customerKeys->find(std::stoi(customerId));
-            if (search != this->customerKeys->end())
-                this->orderKeys->insert(std::stoi(orderId));
+            auto search = customerKeys.find(std::stoi(customerId));
+            if (search != customerKeys.end())
+                orderKeys.insert(std::stoi(orderId));
         }
     }
     stream.close();
+    return orderKeys;
 }
 
 //---------------------------------------------------------------------------
 //This is working
 
 //Replace std::getline
-void JoinQuery::getCustomerIds(const std::string segmentParam){
+std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam){
     std::ifstream stream;
     std::string line;
-    //std::unordered_set<int>customerKeys;
+    std::unordered_set<int>customerKeys;
     stream.open(this->customer,std::ios::in);
     if (stream.is_open()){
         std::string id;
@@ -89,12 +89,13 @@ void JoinQuery::getCustomerIds(const std::string segmentParam){
                 std::getline(linestream,segment,'|'); //Skip the next five elements
             std::getline(linestream,segment,'|'); //save the segment
             if (segment == segmentParam){
-                this->customerKeys->insert(std::stoi(id));
+                customerKeys.insert(std::stoi(id));
             }
 
         }
     }
     stream.close();
+    return customerKeys;
 }
 //---------------------------------------------------------------------------
 size_t JoinQuery::lineCount(std::string rel)
