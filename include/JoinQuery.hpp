@@ -12,8 +12,8 @@ class JoinQuery
     std::string lineitem;
     std::string orders;
     std::string customer;
-    std::shared_ptr<std::unordered_set<int>>customerKeys;
-    std::shared_ptr<std::unordered_set<int>>orderKeys;
+    std::unordered_set<int>*customerKeys;
+    std::unordered_set<int>*orderKeys;
 
    public:
   /**************************************************************************
