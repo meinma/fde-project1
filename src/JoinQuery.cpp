@@ -49,8 +49,8 @@ u_int64_t JoinQuery::getLineitemQuantities() {
             }
         }
     }
-    this->orderKeys->clear();
-    this->customerKeys->clear();
+    //this->orderKeys->clear();
+    //this->customerKeys->clear();
     return (sum * 100) / counter;
 }
 
