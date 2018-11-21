@@ -20,11 +20,8 @@ size_t JoinQuery::avg(std::string segmentParam) {
 
 }
 
-
-//Optimieren durch Weglassen des letzten Multisets und nur der Rückgabe der Summe und der Anzahl an Zeilen.
-// Dadurch Einsparen einer for-Schleife
 //--------------------------------------------------------------------------
-u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKeys) {
+u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKeys) {
     std::ifstream stream;
     u_int64_t counter = 0;
     u_int64_t sum = 0;
@@ -32,8 +29,7 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
     stream.open(this->lineitem, std::ios::in);
     if (stream.is_open()) {
         int orderId;
-        std::string quantityString="";
-        //double quantity;
+        std::string quantityString = "";
         while (std::getline(stream, line)) {
             const char *data = line.data(), *limit = data + line.length(), *last = data;
             unsigned field = 0;
@@ -60,32 +56,27 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
             for (auto iter3 = data2; iter3 != limit2; ++iter3) {
                 if ((*iter3) == '|') {
                     if (++field2 == 5) {
-                        for (auto iter4 = last2; iter4 != iter3 ; ++iter4) {
-                             quantityString.push_back(*iter4);
+                        for (auto iter4 = last2; iter4 != iter3; ++iter4) {
+                            quantityString.push_back(*iter4);
                         }
-                        //quantity = std::stod(quantityString);
                         break;
                     } else
                         last2 = iter3 + 1;
                 }
             }
 
-
-//            std::stringstream linestream(line);
             auto search = orderKeys.find(orderId);
             if (search != orderKeys.end()) {
                 counter++;
-                //for (int i = 0; i < 5; i++)
-                  //  std::getline(linestream, quantityString, '|');
                 sum += std::stod(quantityString);
             }
         }
     }
-    return (sum*100)  / counter ;
+    return (sum * 100) / counter;
 }
 
 //---------------------------------------------------------------------------
-std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int>customerKeys) {
+std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> customerKeys) {
     std::ifstream stream;
     std::string line;
     std::unordered_set<int> orderKeys;
@@ -142,24 +133,54 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int>cust
 //---------------------------------------------------------------------------
 //This is working
 
-//Replace std::getline
+
 std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam) {
     std::ifstream stream;
     std::string line;
     std::unordered_set<int> customerKeys;
     stream.open(this->customer, std::ios::in);
     if (stream.is_open()) {
-        std::string  id;
+        int id;
         std::string segment;
         while (std::getline(stream, line)) {
-                std::stringstream linestream(line);
-                std::getline(linestream, id, '|'); //save id
-                for (int i = 0; i < 5; ++i)
-                    std::getline(linestream, segment, '|'); //Skip the next five elements
-                std::getline(linestream, segment, '|'); //save the segment
-                if (segment == segmentParam) {
-                    customerKeys.insert(std::stoi(id));
+            // Neuer Code
+            const char *data = line.data(), *limit = data + line.length(), *last = data;
+            unsigned field = 0;
+            for (auto iter = data; iter != limit; ++iter) {
+                if ((*iter) == '|') {
+                    if (++field == 1) {
+                        union {
+                            unsigned v;
+                            char buffer[sizeof(unsigned)];
+                        };
+                        v = 0;
+                        for (auto iter2 = last; iter2 != iter; ++iter2)
+                            v = 10 * v + (*iter2) - '0';
+                        id = v;
+                        break;
+                    } else
+                        last = iter + 1;
                 }
+            }
+
+            const char *data2 = line.data(), *limit2 = data + line.length(), *last2 = data;
+            unsigned field2 = 0;
+            segment.clear();
+            for (auto iter3 = data2; iter3 != limit2; ++iter3) {
+                if ((*iter3) == '|') {
+                    if (++field2 == 7) {
+                        for (auto iter4 = last2; iter4 != iter3; ++iter4) {
+                            segment.push_back(*iter4);
+                        }
+                        break;
+                    } else
+                        last2 = iter3 + 1;
+                }
+            }
+
+            if (segment == segmentParam)
+                customerKeys.insert(id);
+
         }
     }
     stream.close();
