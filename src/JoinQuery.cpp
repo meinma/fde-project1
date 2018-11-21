@@ -1,5 +1,5 @@
 #include "JoinQuery.hpp"
-#include <assert.h>
+#include <cassert>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -8,22 +8,27 @@
 //---------------------------------------------------------------------------
 JoinQuery::JoinQuery(std::string new_lineitem, std::string new_orders,
                      std::string new_customer) : lineitem(std::move(new_lineitem)), orders(std::move(new_orders)),
-                                                 customer(std::move(new_customer)) {
+                                                 customer(std::move(new_customer)),customerKeys(new std::unordered_set<int>()),orderKeys(new std::unordered_set<int>()) {
 
 }
 
 //---------------------------------------------------------------------------
 size_t JoinQuery::avg(std::string segmentParam) {
+    /*
     const std::unordered_set<int> customerKeys = getCustomerIds(std::move(segmentParam));
     const std::unordered_set<int> orderKeys = getOrderIds(customerKeys);
     return getLineitemQuantities(orderKeys);
+     */
+    getCustomerIds(std::move(segmentParam));
+    getOrderIds();
+    return getLineitemQuantities();
 }
 
 
 //Optimieren durch Weglassen des letzten Multisets und nur der Rückgabe der Summe und der Anzahl an Zeilen.
 // Dadurch Einsparen einer for-Schleife
 //--------------------------------------------------------------------------
-u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKeys) {
+u_int64_t JoinQuery::getLineitemQuantities() {
     std::ifstream stream;
     u_int64_t counter = 0;
     u_int64_t sum = 0;
@@ -35,8 +40,8 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKe
         while (std::getline(stream, line)) {
             std::stringstream linestream(line);
             std::getline(linestream, orderId, '|');
-            auto search = orderKeys.find(std::stoi(orderId));
-            if (search != orderKeys.end()) {
+            auto search = this->orderKeys->find(std::stoi(orderId));
+            if (search != this->orderKeys->end()) {
                 counter++;
                 for (int i = 0; i < 4; i++)
                     std::getline(linestream, quantity, '|');
@@ -44,21 +49,20 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKe
             }
         }
     }
+    this->orderKeys->clear();
+    this->customerKeys->clear();
     return (sum * 100) / counter;
 }
 
 //---------------------------------------------------------------------------
-// ERstmal hier getLine ersetzen, weil hier nur Zahlen gebraucht werden
-std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> customerKeys) {
+void JoinQuery::getOrderIds() {
     std::ifstream stream;
     std::string line;
-    std::unordered_set<int> orderKeys;
+    //std::unordered_set<int> orderKeys;
     stream.open(this->orders, std::ios::in);
     if (stream.is_open()) {
         int orderId;
         int customerId;
-        //std::string orderId;
-        //std::string customerId;
         while (std::getline(stream, line)) {
             const char *data = line.data(), *limit = data + line.length(), *last = data;
             unsigned field = 0;
@@ -96,41 +100,40 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> cus
                         last2 = iter3 + 1;
                 }
             }
-            auto search = customerKeys.find(customerId);
-            if (search != customerKeys.end())
-                orderKeys.insert(orderId);
+            auto search = this->customerKeys->find(customerId);
+            if (search != this->customerKeys->end())
+                this->orderKeys->insert(orderId);
         }
     }
     stream.close();
-    return orderKeys;
+    //return orderKeys;
 }
 
 //---------------------------------------------------------------------------
 //This is working
 
 //Replace std::getline
-std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam) {
+void JoinQuery::getCustomerIds(const std::string segmentParam) {
     std::ifstream stream;
     std::string line;
-    std::unordered_set<int> customerKeys;
+    //std::unordered_set<int> customerKeys;
     stream.open(this->customer, std::ios::in);
     if (stream.is_open()) {
-        std::string id;
+        std::string  id;
         std::string segment;
         while (std::getline(stream, line)) {
-            std::stringstream linestream(line);
-            std::getline(linestream, id, '|'); //save id
-            for (int i = 0; i < 5; ++i)
-                std::getline(linestream, segment, '|'); //Skip the next five elements
-            std::getline(linestream, segment, '|'); //save the segment
-            if (segment == segmentParam) {
-                customerKeys.insert(std::stoi(id));
-            }
-
+                std::stringstream linestream(line);
+                std::getline(linestream, id, '|'); //save id
+                for (int i = 0; i < 5; ++i)
+                    std::getline(linestream, segment, '|'); //Skip the next five elements
+                std::getline(linestream, segment, '|'); //save the segment
+                if (segment == segmentParam) {
+                    this->customerKeys->insert(std::stoi(id));
+                }
         }
     }
     stream.close();
-    return customerKeys;
+    //return customerKeys;
 }
 
 //---------------------------------------------------------------------------
