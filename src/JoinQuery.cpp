@@ -32,7 +32,8 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
     stream.open(this->lineitem, std::ios::in);
     if (stream.is_open()) {
         int orderId;
-        std::string quantity;
+        std::string quantityString="";
+        //double quantity;
         while (std::getline(stream, line)) {
             const char *data = line.data(), *limit = data + line.length(), *last = data;
             unsigned field = 0;
@@ -52,18 +53,35 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int>orderKey
                         last = iter + 1;
                 }
             }
-            std::stringstream linestream(line);
+
+            const char *data2 = line.data(), *limit2 = data + line.length(), *last2 = data;
+            unsigned field2 = 0;
+            quantityString.clear();
+            for (auto iter3 = data2; iter3 != limit2; ++iter3) {
+                if ((*iter3) == '|') {
+                    if (++field2 == 5) {
+                        for (auto iter4 = last2; iter4 != iter3 ; ++iter4) {
+                             quantityString.push_back(*iter4);
+                        }
+                        //quantity = std::stod(quantityString);
+                        break;
+                    } else
+                        last2 = iter3 + 1;
+                }
+            }
+
+
+//            std::stringstream linestream(line);
             auto search = orderKeys.find(orderId);
             if (search != orderKeys.end()) {
                 counter++;
-                for (int i = 0; i < 5; i++)
-                    std::getline(linestream, quantity, '|');
-                sum += std::stod(quantity);
+                //for (int i = 0; i < 5; i++)
+                  //  std::getline(linestream, quantityString, '|');
+                sum += std::stod(quantityString);
             }
-             
         }
     }
-    return (sum * 100) / counter;
+    return (sum*100)  / counter ;
 }
 
 //---------------------------------------------------------------------------

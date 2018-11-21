@@ -62,13 +62,13 @@ class JoinQuery
     * get all orderkeys where the custkey is in customerIds
     *
     */
-    std::unordered_set<int> getOrderIds(const std::unordered_set<int>);
+    std::unordered_set<int> getOrderIds(std::unordered_set<int>);
     /**
      *
      * @param orderIds
      * @return all quantities of table lineitem belonging to the orders from the parameter orderIds
      */
-    u_int64_t getLineitemQuantities(const std::unordered_set<int>);
+    u_int64_t getLineitemQuantities(std::unordered_set<int>);
    /// Returns line count of given file
    size_t lineCount(std::string rel);
 };
