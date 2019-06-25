@@ -143,7 +143,7 @@ std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam
         int id;
         std::string segment;
         while (std::getline(stream, line)) {
-            // Neuer Code
+
             const char *data = line.data(), *limit = data + line.length(), *last = data;
             unsigned field = 0;
             for (auto iter = data; iter != limit; ++iter) {
