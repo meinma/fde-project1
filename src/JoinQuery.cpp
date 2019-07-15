@@ -21,6 +21,9 @@ size_t JoinQuery::avg(std::string segmentParam) {
 }
 
 //--------------------------------------------------------------------------
+/*
+    Compute the average quantity of all lineitems with an orderId, which is contained in orderKeys
+ */
 u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKeys) {
     std::ifstream stream;
     u_int64_t counter = 0;
@@ -31,10 +34,12 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKe
         int orderId;
         std::string quantityString = "";
         while (std::getline(stream, line)) {
+            // Extract orderId
             const char *data = line.data(), *limit = data + line.length(), *last = data;
             unsigned field = 0;
             for (auto iter = data; iter != limit; ++iter) {
                 if ((*iter) == '|') {
+                    // OrderId is 1st field of the line
                     if (++field == 1) {
                         union {
                             unsigned v;
@@ -50,11 +55,13 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKe
                 }
             }
 
+            // Extract quantity
             const char *data2 = line.data(), *limit2 = data + line.length(), *last2 = data;
             unsigned field2 = 0;
             quantityString.clear();
             for (auto iter3 = data2; iter3 != limit2; ++iter3) {
                 if ((*iter3) == '|') {
+                    // Quantity is 5th field of the linne
                     if (++field2 == 5) {
                         for (auto iter4 = last2; iter4 != iter3; ++iter4) {
                             quantityString.push_back(*iter4);
@@ -64,7 +71,7 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKe
                         last2 = iter3 + 1;
                 }
             }
-
+            // If OrderId is in the given orderkeys, increase counter and add quantity to the sum of quanitites
             auto search = orderKeys.find(orderId);
             if (search != orderKeys.end()) {
                 counter++;
@@ -76,6 +83,10 @@ u_int64_t JoinQuery::getLineitemQuantities(const std::unordered_set<int> orderKe
 }
 
 //---------------------------------------------------------------------------
+/*
+    Returns unordered set of orderids, which belong to any customer of the given customerkeys in the argument
+
+ */
 std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> customerKeys) {
     std::ifstream stream;
     std::string line;
@@ -85,10 +96,12 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> cus
         int orderId;
         int customerId;
         while (std::getline(stream, line)) {
+            // Extract the orderId per line 
             const char *data = line.data(), *limit = data + line.length(), *last = data;
             unsigned field = 0;
             for (auto iter = data; iter != limit; ++iter) {
                 if ((*iter) == '|') {
+                    // OrderId is the first field of the line
                     if (++field == 1) {
                         union {
                             unsigned v;
@@ -103,10 +116,12 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> cus
                         last = iter + 1;
                 }
             }
+            // Extract the customerId per line
             const char *data2 = line.data(), *limit2 = data + line.length(), *last2 = data;
             unsigned field2 = 0;
             for (auto iter3 = data2; iter3 != limit2; ++iter3) {
                 if ((*iter3) == '|') {
+                    // customerId is the 2nd field of the line
                     if (++field2 == 2) {
                         union {
                             unsigned w;
@@ -121,6 +136,8 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> cus
                         last2 = iter3 + 1;
                 }
             }
+            // If customerId is in the given customerkeys, add orderId to orderkeys,
+            // which will be returned in the end
             auto search = customerKeys.find(customerId);
             if (search != customerKeys.end())
                 orderKeys.insert(orderId);
@@ -131,9 +148,9 @@ std::unordered_set<int> JoinQuery::getOrderIds(const std::unordered_set<int> cus
 }
 
 //---------------------------------------------------------------------------
-//This is working
-
-
+/*
+    returns unordered_set with all customerKeys containing the given Marketsegment  
+ */
 std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam) {
     std::ifstream stream;
     std::string line;
@@ -142,12 +159,15 @@ std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam
     if (stream.is_open()) {
         int id;
         std::string segment;
+        // Read file liny by line
         while (std::getline(stream, line)) {
-
+            
+            // extracts customerId,
             const char *data = line.data(), *limit = data + line.length(), *last = data;
             unsigned field = 0;
             for (auto iter = data; iter != limit; ++iter) {
                 if ((*iter) == '|') {
+                    // customerId is the first field of the line
                     if (++field == 1) {
                         union {
                             unsigned v;
@@ -163,11 +183,13 @@ std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam
                 }
             }
 
+            // extracts marketsegment from line
             const char *data2 = line.data(), *limit2 = data + line.length(), *last2 = data;
             unsigned field2 = 0;
             segment.clear();
             for (auto iter3 = data2; iter3 != limit2; ++iter3) {
                 if ((*iter3) == '|') {
+                    // marketsemgent is the 7th field of the line
                     if (++field2 == 7) {
                         for (auto iter4 = last2; iter4 != iter3; ++iter4) {
                             segment.push_back(*iter4);
@@ -177,7 +199,8 @@ std::unordered_set<int> JoinQuery::getCustomerIds(const std::string segmentParam
                         last2 = iter3 + 1;
                 }
             }
-
+            // If the given marketsegment corresponds to the marketsegment of current line,
+            // add customerId to unorderedset of customerIds
             if (segment == segmentParam)
                 customerKeys.insert(id);
 
